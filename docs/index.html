@@ -172,10 +172,6 @@ const enemySpeed = 1.5;
 const bulletSpeed = 12;
 const enemyBulletSpeed = 4;
 
-// Background image
-const bgImage = new Image();
-bgImage.src = 'https://i.postimg.cc/VkPHr8m9/Whats-App-Image-2025-09-04-at-11-16-38-PM.jpg';
-
 // Enemy constructor with maxHp, showHpBarTimer, and zigzag properties
 function createEnemy(x, y, color, big=false, hp=3, zigzag=false) {
   return {
@@ -671,3 +667,4 @@ canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </body>
 </html>
+
