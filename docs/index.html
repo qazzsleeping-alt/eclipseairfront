@@ -18,14 +18,14 @@
       text-align: center;
       margin: 10px;
       position: relative;
-      touch-action: none; /* prevent default touch actions for smooth control */
+      /* Removed touch-action:none here to avoid blocking inputs */
     }
     canvas {
       display: block;
       margin: 0 auto;
       border: 2px solid #ccc;
       background: black;
-      touch-action: none;
+      touch-action: none; /* prevent default gestures only on canvas */
     }
     #waveText {
       margin-top: 10px;
@@ -57,7 +57,7 @@
       padding: 8px 16px;
       cursor: pointer;
     }
-      #leaderboardContainer {
+    #leaderboardContainer {
       margin-top: 105px;
       margin-bottom: 100px;
       margin-right: 150px;
@@ -108,7 +108,6 @@
     <button id="startBtn">Start Game</button>
   </div>
 
-
   <canvas id="gameCanvas" width="480" height="640"></canvas>
   <div id="waveText">Wave: 1</div>
   <div id="infoText">Time: 0.00 s</div>
@@ -136,23 +135,6 @@ const restartBtn = document.getElementById('restartBtn');
 
 const nameInputContainer = document.getElementById('nameInputContainer');
 const nameInput = document.getElementById('nameInput');
-const canvas = document.getElementById('gameCanvas');
-
-canvas.addEventListener('touchstart', (e) => {
-  //...
-}, {passive:false});
-
-canvas.addEventListener('touchmove', (e) => {
-  //...
-}, {passive:false});
-
-canvas.addEventListener('touchend', (e) => {
-  //...
-}, {passive:false});
-
-canvas.addEventListener('touchcancel', (e) => {
-  //...
-}, {passive:false});
 const startBtn = document.getElementById('startBtn');
 
 const leaderboardList = document.getElementById('leaderboardList');
@@ -455,28 +437,20 @@ function gameLoop() {
 // Add winner to leaderboard and update display
 function addToLeaderboard(name, time) {
   if(!name) return;
-  // Check if player already exists
   const existingIndex = leaderboard.findIndex(entry => entry.name === name);
   if(existingIndex !== -1){
-    // Update time if new time is better (smaller)
     if(time < leaderboard[existingIndex].time){
       leaderboard[existingIndex].time = time;
     }
   } else {
-    // Add new player
     leaderboard.push({name, time});
   }
-  // Sort by time ascending
   leaderboard.sort((a,b) => a.time - b.time);
-
-  // Save to localStorage
   saveLeaderboardToStorage();
-
-  // Render updated leaderboard
   renderLeaderboard();
 }
 
-// Load leaderboard from localStorage on page load
+// Load leaderboard from localStorage
 function loadLeaderboardFromStorage() {
   const data = localStorage.getItem('leaderboard');
   if(data){
@@ -490,12 +464,12 @@ function loadLeaderboardFromStorage() {
   }
 }
 
-// Save leaderboard array to localStorage
+// Save leaderboard to localStorage
 function saveLeaderboardToStorage() {
   localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
 }
 
-// Render leaderboard in the list element
+// Render leaderboard
 function renderLeaderboard() {
   leaderboardList.innerHTML = '';
   leaderboard.forEach((entry) => {
@@ -505,7 +479,7 @@ function renderLeaderboard() {
   });
 }
 
-// Restart game logic
+// Restart game
 restartBtn.addEventListener('click', () => {
   restartBtn.style.display = 'none';
   gameOverText.style.display = 'none';
@@ -527,10 +501,7 @@ restartBtn.addEventListener('click', () => {
 
 // Keyboard input (only active after game start)
 document.addEventListener('keydown', e => {
-  if(!startBtn.disabled){
-    // Ignore input before game starts
-    return;
-  }
+  if(!startBtn.disabled) return;
   if(e.key === 'ArrowLeft') player.movingLeft = true;
   else if(e.key === 'ArrowRight') player.movingRight = true;
   else if(e.key === 'ArrowUp') player.movingUp = true;
@@ -539,16 +510,14 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('keyup', e => {
-  if(!startBtn.disabled){
-    return;
-  }
+  if(!startBtn.disabled) return;
   if(e.key === 'ArrowLeft') player.movingLeft = false;
   else if(e.key === 'ArrowRight') player.movingRight = false;
   else if(e.key === 'ArrowUp') player.movingUp = false;
   else if(e.key === 'ArrowDown') player.movingDown = false;
 });
 
-// Start game only after entering a name and clicking Start
+// Start game only after entering name and clicking Start
 startBtn.addEventListener('click', () => {
   const name = nameInput.value.trim();
   if(name.length === 0){
@@ -561,7 +530,7 @@ startBtn.addEventListener('click', () => {
   resetGame();
 });
 
-// Reset game function (called on start and restart)
+// Reset game function (start and restart)
 function resetGame() {
   waveNumber = 1;
   gameOver = false;
@@ -581,31 +550,27 @@ function resetGame() {
   gameLoop();
 }
 
-// Initial leaderboard render (empty)
-// On page load, load leaderboard from localStorage and render
+// Initial leaderboard render
 loadLeaderboardFromStorage();
 renderLeaderboard();
 
-/* === Mobile Touch Control Integration === */
+/* === Mobile Touch Control on Canvas === */
 
-// Variables for mobile touch control
 let autoFireInterval = null;
 let isDraggingPlayer = false;
 let dragTouchId = null;
 let touchOffsetX = 0;
 let touchOffsetY = 0;
 
-const gameContainer = document.getElementById('gameContainer');
-
-// Start auto firing bullets function
+// Start auto fire bullets function
 function startAutoFire() {
-  if (autoFireInterval) return; // Already firing
+  if (autoFireInterval) return;
   autoFireInterval = setInterval(() => {
     firePlayerBullet();
-  }, 250); // fire every 250ms
+  }, 250);
 }
 
-// Stop auto firing bullets function
+// Stop auto fire bullets function
 function stopAutoFire() {
   if (autoFireInterval) {
     clearInterval(autoFireInterval);
@@ -628,28 +593,26 @@ function isTouchOnPlayer(x, y) {
       && y >= player.y && y <= player.y + player.height;
 }
 
-// Touch start event on game container
-gameContainer.addEventListener('touchstart', (e) => {
+// Touch start on canvas
+canvas.addEventListener('touchstart', (e) => {
   if(gameOver || gameWin) return;
   e.preventDefault();
   for(let touch of e.changedTouches){
     const pos = getTouchPos(touch);
     if(isTouchOnPlayer(pos.x, pos.y)){
-      // Start dragging player
       isDraggingPlayer = true;
       dragTouchId = touch.identifier;
       touchOffsetX = pos.x - player.x;
       touchOffsetY = pos.y - player.y;
-      stopAutoFire(); // stop firing while dragging
+      stopAutoFire();
     } else {
-      // Start auto fire
       startAutoFire();
     }
   }
 }, {passive:false});
 
-// Touch move event on game container
-gameContainer.addEventListener('touchmove', (e) => {
+// Touch move on canvas
+canvas.addEventListener('touchmove', (e) => {
   if(gameOver || gameWin) return;
   e.preventDefault();
   if(!isDraggingPlayer) return;
@@ -665,7 +628,7 @@ gameContainer.addEventListener('touchmove', (e) => {
   }
 }, {passive:false});
 
-// Touch end or cancel event on game container
+// Touch end and cancel on canvas
 function endTouch(e){
   e.preventDefault();
   for(let touch of e.changedTouches){
@@ -677,10 +640,10 @@ function endTouch(e){
   stopAutoFire();
 }
 
-gameContainer.addEventListener('touchend', endTouch, {passive:false});
-gameContainer.addEventListener('touchcancel', endTouch, {passive:false});
+canvas.addEventListener('touchend', endTouch, {passive:false});
+canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </script>
+
 </body>
 </html>
-
