@@ -210,7 +210,6 @@ let player = {
 };
 
 let bullets = [];
-let enemyBullets = [];
 let enemies = [];
 let score = 0;
 let stars = 0;
@@ -218,40 +217,25 @@ let gameOver = false;
 let gameWon = false;
 let startTime = null;
 let elapsedTime = 0;
-let enemySpeed = 3; // Base enemy speed
 let neonColor = '#ff00ff'; // Default neon magenta
-let rgbCycle = 0; // For RGB color cycling
 
 // Enemy constructor
 function createEnemy() {
-  const size = stars >= 3 ? 60 : 40; // 1.5x size for 3 stars
   return {
-    x: Math.random() * (canvas.width - size),
-    y: -size,
-    width: size,
-    height: size,
+    x: Math.random() * (canvas.width - 40),
+    y: -40,
+    width: 40,
+    height: 40,
     color: '#FF3333',
-    alive: true,
-    shootTimer: 0,
-    shootInterval: stars === 2 ? 1000 : 400 // 1000ms (1/s) for stars=2, 400ms (2.5/s) for stars=3
-  };
-}
-
-// Enemy bullet constructor
-function createEnemyBullet(x, y) {
-  const size = stars >= 3 ? 60 : 40; // Match enemy size
-  return {
-    x: x + (stars >= 3 ? 25 : 15), // Center bullet on enemy
-    y: y + size, // Start at bottom of enemy
-    width: 10,
-    height: 20,
-    speed: stars === 2 ? 10 : 1.5 // 10 for stars=2, 1.5 for stars=3
+    alive: true
   };
 }
 
 // Spawn enemies randomly
 function spawnEnemy() {
-  const spawnChance = stars >= 2 ? 0.04 : 0.02; // 4% for stars>=2, 2% otherwise
+  let spawnChance = 0.02; // Base 2% chance
+  if (stars >= 3) spawnChance = 0.06; // 6% for 3 stars (tripled)
+  else if (stars >= 2) spawnChance = 0.04; // 4% for 2 stars (doubled)
   if (Math.random() < spawnChance) {
     enemies.push(createEnemy());
   }
@@ -269,16 +253,6 @@ function firePlayerBullet() {
     height: 20,
     speed: 7
   });
-}
-
-// Enemy firing bullets
-function fireEnemyBullet(enemy) {
-  if (!enemy.alive || stars < 2) return; // No bullets for stars 0 or 1
-  enemyBullets.push(createEnemyBullet(enemy.x, enemy.y));
-  if (stars >= 3) {
-    // Fire a second bullet for 3 stars
-    enemyBullets.push(createEnemyBullet(enemy.x, enemy.y));
-  }
 }
 
 // Collision detection AABB
@@ -304,19 +278,14 @@ function drawStar(x, y, size) {
 
 // Update neon colors
 function updateNeonColors() {
-  if (stars >= 3) {
-    // RGB color cycling
-    const r = Math.sin(rgbCycle) * 127 + 128;
-    const g = Math.sin(rgbCycle + 2) * 127 + 128;
-    const b = Math.sin(rgbCycle + 4) * 127 + 128;
-    neonColor = `rgb(${r}, ${g}, ${b})`;
-    rgbCycle += 0.05; // Adjust speed of color cycling
+  if (stars === 3) {
+    neonColor = '#FFFFFF'; // White for 3 stars
   } else if (stars === 2) {
-    neonColor = '#FFFFFF'; // White for stars=2
+    neonColor = '#FF0000'; // Red for 2 stars
   } else if (stars === 1) {
-    neonColor = '#00FFFF'; // Cyan for stars=1
+    neonColor = '#00FFFF'; // Cyan for 1 star
   } else {
-    neonColor = '#FF00FF'; // Default magenta for stars=0
+    neonColor = '#FF00FF'; // Magenta for 0 stars
   }
 
   const gameContainer = document.getElementById('gameContainer');
@@ -373,15 +342,20 @@ function update() {
     restartBtn.style.display = 'inline-block';
     addToLeaderboard(playerName, score, stars);
   } else if (score >= 500) {
+    stars = 3;
+  } else if (score >= 400) {
     stars = 2;
-  } else if (score >= 300) {
+  } else if (score >= 200) {
     stars = 1;
   } else {
     stars = 0;
   }
 
   // Update enemy speed based on stars
-  const effectiveEnemySpeed = stars >= 1 ? enemySpeed * 2 : enemySpeed; // Double speed for stars >= 1
+  let effectiveEnemySpeed = 3; // Default for 0 stars
+  if (stars === 1) effectiveEnemySpeed = 5;
+  else if (stars === 2) effectiveEnemySpeed = 7;
+  else if (stars === 3) effectiveEnemySpeed = 10;
 
   // Move player
   if (player.movingLeft) player.x -= player.speed;
@@ -392,27 +366,12 @@ function update() {
   bullets.forEach(b => b.y -= b.speed);
   bullets = bullets.filter(b => b.y + b.height > 0);
 
-  // Update enemy bullets
-  enemyBullets.forEach(b => b.y += b.speed); // Positive speed moves downward
-  enemyBullets = enemyBullets.filter(b => b.y < canvas.height); // Remove bullets below canvas
-
   // Spawn and update enemies
   spawnEnemy();
   enemies = enemies.filter(enemy => enemy.y < canvas.height);
   enemies.forEach(enemy => {
     if (!enemy.alive) return;
     enemy.y += effectiveEnemySpeed;
-
-    // Enemy shooting for stars >= 2
-    if (stars >= 2) {
-      enemy.shootTimer += 16.67; // Approx ms per frame at 60 FPS
-      if (enemy.shootTimer >= enemy.shootInterval) {
-        fireEnemyBullet(enemy);
-        enemy.shootTimer = 0;
-        // Update shootInterval for stars=2 or 3
-        enemy.shootInterval = stars === 2 ? 1000 : 400;
-      }
-    }
 
     // Check collision with player
     if (isColliding(player, enemy)) {
@@ -429,16 +388,6 @@ function update() {
         bullets.splice(bulletIndex, 1);
         score += 10;
         scoreText.textContent = `Score: ${score}`;
-      }
-    });
-
-    // Check collision with enemy bullets
-    enemyBullets.forEach((bullet) => {
-      if (isColliding(bullet, player)) {
-        gameOver = true;
-        restartBtn.style.display = 'inline-block';
-        gameOverText.style.display = 'block';
-        addToLeaderboard(playerName, score, stars);
       }
     });
   });
@@ -475,10 +424,6 @@ function draw() {
       ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
     }
   });
-
-  // Draw enemy bullets
-  ctx.fillStyle = '#FF4500';
-  enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
   // Draw stars
   for (let i = 0; i < stars; i++) {
@@ -552,11 +497,8 @@ restartBtn.addEventListener('click', () => {
   gameOver = false;
   gameWon = false;
   bullets = [];
-  enemyBullets = [];
   enemies = [];
-  enemySpeed = 3; // Reset enemy speed
   neonColor = '#ff00ff'; // Reset neon color
-  rgbCycle = 0; // Reset RGB cycle
   player.x = canvas.width / 2 - player.width / 2;
   player.y = canvas.height - 60;
   startTime = performance.now();
@@ -602,11 +544,8 @@ function resetGame() {
   gameWinText.style.display = 'none';
   restartBtn.style.display = 'none';
   bullets = [];
-  enemyBullets = [];
   enemies = [];
-  enemySpeed = 3; // Reset enemy speed
   neonColor = '#ff00ff'; // Reset neon color
-  rgbCycle = 0; // Reset RGB cycle
   player.x = canvas.width / 2 - player.width / 2;
   player.y = canvas.height - 60;
   startTime = performance.now();
