@@ -108,6 +108,7 @@
     <button id="startBtn">Start Game</button>
   </div>
 
+
   <canvas id="gameCanvas" width="480" height="640"></canvas>
   <div id="waveText">Wave: 1</div>
   <div id="infoText">Time: 0.00 s</div>
@@ -135,6 +136,23 @@ const restartBtn = document.getElementById('restartBtn');
 
 const nameInputContainer = document.getElementById('nameInputContainer');
 const nameInput = document.getElementById('nameInput');
+const canvas = document.getElementById('gameCanvas');
+
+canvas.addEventListener('touchstart', (e) => {
+  //...
+}, {passive:false});
+
+canvas.addEventListener('touchmove', (e) => {
+  //...
+}, {passive:false});
+
+canvas.addEventListener('touchend', (e) => {
+  //...
+}, {passive:false});
+
+canvas.addEventListener('touchcancel', (e) => {
+  //...
+}, {passive:false});
 const startBtn = document.getElementById('startBtn');
 
 const leaderboardList = document.getElementById('leaderboardList');
@@ -665,3 +683,4 @@ gameContainer.addEventListener('touchcancel', endTouch, {passive:false});
 </script>
 </body>
 </html>
+
