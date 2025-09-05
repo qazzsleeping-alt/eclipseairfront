@@ -43,7 +43,7 @@
       transform: translate(-50%, -50%);
       display: none;
       z-index: 10;
-      -webkit-text-stroke: 3px red; /* Stroke for Game Over and Game Win text */
+      -webkit-text-stroke: 3px black; /* Adjusted stroke for better contrast */
     }
     #gameOver {
       color: red;
@@ -176,7 +176,7 @@ const enemyBulletSpeed = 4;
 const bgImage = new Image();
 bgImage.src = 'https://i.postimg.cc/K8pzZF6f/dd4ed74dce3971e182731f7252e5a778.jpg';
 
-// Enemy constructor with maxHp, showHpBarTimer, and zigzag properties
+// Enemy constructor with maxHp, showHpBarTimer, zigzag, and direction properties
 function createEnemy(x, y, color, big=false, hp=3, zigzag=false) {
   return {
     x, y,
@@ -191,7 +191,7 @@ function createEnemy(x, y, color, big=false, hp=3, zigzag=false) {
     shootInterval: big ? 120 : 200 + Math.floor(Math.random()*200),
     showHpBarTimer: 0,
     zigzag,
-    zigzagPhase: Math.random() * Math.PI * 2
+    direction: Math.random() > 0.5 ? 1 : -1 // Random initial direction for zigzag
   };
 }
 
@@ -229,7 +229,7 @@ function spawnWave(num) {
       for(let i=0; i<5; i++) {
         let x = canvas.width/2 - 60 + i*60;
         let y = -100 - i*60;
-        enemies.push(createEnemy(x, y, '#FF3333', true, 3, true));
+        enemies.push(createEnemy(x, y, '#FF3333', true, 3, true)); // Big enemies with zigzag
       }
       break;
     case 4:
@@ -240,11 +240,11 @@ function spawnWave(num) {
       }
       break;
     case 5:
-      enemies.push(createEnemy(canvas.width/2 - 40, -120, '#AA0000', true, 50, true));
-      enemies.push(createEnemy(canvas.width/2 - 120, -60, '#FF3333', false, 3, true));
-      enemies.push(createEnemy(canvas.width/2 + 40, -60, '#FF3333', false, 3, true));
-      enemies.push(createEnemy(canvas.width/2 - 160, -30, '#FF3333', false, 3, true));
-      enemies.push(createEnemy(canvas.width/2 + 80, -30, '#FF3333', false, 3, true));
+      enemies.push(createEnemy(canvas.width/2 - 40, -120, '#AA0000', true, 50, true)); // Boss with zigzag
+      enemies.push(createEnemy(canvas.width/2 - 120, -60, '#FF3333', false, 3, true)); // With zigzag
+      enemies.push(createEnemy(canvas.width/2 + 40, -60, '#FF3333', false, 3, true)); // With zigzag
+      enemies.push(createEnemy(canvas.width/2 - 160, -30, '#FF3333', false, 3, true)); // With zigzag
+      enemies.push(createEnemy(canvas.width/2 + 80, -30, '#FF3333', false, 3, true)); // With zigzag
       break;
   }
 }
@@ -306,11 +306,15 @@ function update() {
 
     enemy.y += enemySpeed;
 
+    // Logical zigzag movement: move laterally and reverse direction at edges
     if (enemy.zigzag) {
-      const amplitude = 2;
-      const frequency = 0.05;
-      enemy.x += amplitude * Math.sin(enemy.y * frequency + enemy.zigzagPhase);
-      enemy.x = Math.max(0, Math.min(canvas.width - enemy.width, enemy.x));
+      const lateralSpeed = enemy.big ? 1.5 : 2.5; // Adjust speed based on size for logic
+      enemy.x += lateralSpeed * enemy.direction;
+      if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.width) {
+        enemy.direction = -enemy.direction;
+        // Optional: slight downward boost on direction change for more dynamic movement
+        enemy.y += 10;
+      }
     }
 
     enemy.shootTimer++;
@@ -385,7 +389,7 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // Player triangle with 2px stroke
+  // Player triangle with 3px stroke
   ctx.fillStyle = '#00BFFF';
   ctx.strokeStyle = 'white';
   ctx.lineWidth = 3;
@@ -649,5 +653,3 @@ canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </body>
 </html>
-
-
