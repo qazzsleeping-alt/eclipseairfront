@@ -572,10 +572,94 @@ function resetGame() {
   gameLoop();
 }
 
+// Variables for touch control
+let touchActive = false;
+let touchId = null;
+let touchOffsetX = 0;
+
+// Helper to get touch position relative to canvas
+function getTouchPos(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
+}
+
+// Check if point is inside player piramid area (triangle bounding box)
+function isTouchOnPlayer(pos) {
+  return pos.x >= player.x && pos.x <= player.x + player.width &&
+         pos.y >= player.y && pos.y <= player.y + player.height;
+}
+
+// Touch start event
+canvas.addEventListener('touchstart', function(e) {
+  if (gameOver || gameWin || startBtn.disabled === false) return;
+
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const touch = e.changedTouches[i];
+    const pos = getTouchPos(touch);
+
+    if (isTouchOnPlayer(pos)) {
+      touchActive = true;
+      touchId = touch.identifier;
+      // Calculate offset so player moves relative to finger position
+      touchOffsetX = pos.x - player.x;
+
+      // Fire bullet immediately on touch start on player
+      firePlayerBullet();
+
+      // Prevent default to avoid scrolling
+      e.preventDefault();
+      break;
+    }
+  }
+}, {passive:false});
+
+// Touch move event
+canvas.addEventListener('touchmove', function(e) {
+  if (!touchActive) return;
+
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const touch = e.changedTouches[i];
+    if (touch.identifier === touchId) {
+      const pos = getTouchPos(touch);
+
+      // Move player x according to touch position minus offset
+      player.x = pos.x - touchOffsetX;
+
+      // Clamp player position inside canvas bounds
+      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+
+      e.preventDefault();
+      break;
+    }
+  }
+}, {passive:false});
+
+// Touch end or cancel event
+canvas.addEventListener('touchend', function(e) {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const touch = e.changedTouches[i];
+    if (touch.identifier === touchId) {
+      touchActive = false;
+      touchId = null;
+      break;
+    }
+  }
+}, {passive:false});
+
+canvas.addEventListener('touchcancel', function(e) {
+  touchActive = false;
+  touchId = null;
+}, {passive:false});
+
 // Initial leaderboard render (empty)
 // On page load, load leaderboard from localStorage and render
 loadLeaderboardFromStorage();
 renderLeaderboard();
+
+
 </script>
 </body>
 </html>
