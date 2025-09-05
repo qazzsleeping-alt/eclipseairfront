@@ -165,6 +165,101 @@ let gameWin = false;
 let startTime = null;
 let elapsedTime = 0;
 
+// Mobile touch support variables
+let autoFireInterval = null;
+let isDraggingPlayer = false;
+let dragTouchId = null;
+let touchOffsetX = 0;
+let touchOffsetY = 0;
+
+// Get game container element
+const gameContainer = document.getElementById('gameContainer');
+
+// Function to start auto firing bullets
+function startAutoFire() {
+  if (autoFireInterval) return; // Already firing
+  autoFireInterval = setInterval(() => {
+    firePlayerBullet();
+  }, 250); // Fire every 250ms
+}
+
+// Function to stop auto firing bullets
+function stopAutoFire() {
+  if (autoFireInterval) {
+    clearInterval(autoFireInterval);
+    autoFireInterval = null;
+  }
+}
+
+// Helper to get touch position relative to canvas
+function getTouchPos(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
+}
+
+// Check if position is inside player pyramid area
+function isTouchOnPlayer(x, y) {
+  return x >= player.x && x <= player.x + player.width
+      && y >= player.y && y <= player.y + player.height;
+}
+
+// Touch start event handler
+gameContainer.addEventListener('touchstart', (e) => {
+  if (gameOver || gameWin) return;
+  e.preventDefault();
+  for (let touch of e.changedTouches) {
+    const pos = getTouchPos(touch);
+    if (isTouchOnPlayer(pos.x, pos.y)) {
+      // Start dragging player
+      isDraggingPlayer = true;
+      dragTouchId = touch.identifier;
+      touchOffsetX = pos.x - player.x;
+      touchOffsetY = pos.y - player.y;
+      stopAutoFire(); // Stop auto fire if dragging player
+    } else {
+      // Start auto firing bullets if touch on game container but not on player
+      startAutoFire();
+    }
+  }
+}, { passive: false });
+
+// Touch move event handler
+gameContainer.addEventListener('touchmove', (e) => {
+  if (gameOver || gameWin) return;
+  e.preventDefault();
+  if (!isDraggingPlayer) return;
+  for (let touch of e.changedTouches) {
+    if (touch.identifier === dragTouchId) {
+      const pos = getTouchPos(touch);
+      // Move player pyramid to follow finger, constrain inside canvas
+      player.x = pos.x - touchOffsetX;
+      player.y = pos.y - touchOffsetY;
+      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+      player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+      break;
+    }
+  }
+}, { passive: false });
+
+// Touch end and cancel event handler
+function endTouch(e) {
+  e.preventDefault();
+  for (let touch of e.changedTouches) {
+    if (touch.identifier === dragTouchId) {
+      isDraggingPlayer = false;
+      dragTouchId = null;
+    }
+  }
+  // Stop auto firing bullets when user lifts finger
+  stopAutoFire();
+}
+
+gameContainer.addEventListener('touchend', endTouch, { passive: false });
+gameContainer.addEventListener('touchcancel', endTouch, { passive: false });
+
 // Constants
 const enemySpeed = 1.5;
 const bulletSpeed = 12;
@@ -571,88 +666,6 @@ function resetGame() {
   infoText.textContent = `Time: 0.00 s`;
   gameLoop();
 }
-
-// Variables for touch control
-let touchActive = false;
-let touchId = null;
-let touchOffsetX = 0;
-
-// Helper to get touch position relative to canvas
-function getTouchPos(touch) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: touch.clientX - rect.left,
-    y: touch.clientY - rect.top
-  };
-}
-
-// Check if point is inside player piramid area (triangle bounding box)
-function isTouchOnPlayer(pos) {
-  return pos.x >= player.x && pos.x <= player.x + player.width &&
-         pos.y >= player.y && pos.y <= player.y + player.height;
-}
-
-// Touch start event
-canvas.addEventListener('touchstart', function(e) {
-  if (gameOver || gameWin || startBtn.disabled === false) return;
-
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    const touch = e.changedTouches[i];
-    const pos = getTouchPos(touch);
-
-    if (isTouchOnPlayer(pos)) {
-      touchActive = true;
-      touchId = touch.identifier;
-      // Calculate offset so player moves relative to finger position
-      touchOffsetX = pos.x - player.x;
-
-      // Fire bullet immediately on touch start on player
-      firePlayerBullet();
-
-      // Prevent default to avoid scrolling
-      e.preventDefault();
-      break;
-    }
-  }
-}, {passive:false});
-
-// Touch move event
-canvas.addEventListener('touchmove', function(e) {
-  if (!touchActive) return;
-
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    const touch = e.changedTouches[i];
-    if (touch.identifier === touchId) {
-      const pos = getTouchPos(touch);
-
-      // Move player x according to touch position minus offset
-      player.x = pos.x - touchOffsetX;
-
-      // Clamp player position inside canvas bounds
-      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-
-      e.preventDefault();
-      break;
-    }
-  }
-}, {passive:false});
-
-// Touch end or cancel event
-canvas.addEventListener('touchend', function(e) {
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    const touch = e.changedTouches[i];
-    if (touch.identifier === touchId) {
-      touchActive = false;
-      touchId = null;
-      break;
-    }
-  }
-}, {passive:false});
-
-canvas.addEventListener('touchcancel', function(e) {
-  touchActive = false;
-  touchId = null;
-}, {passive:false});
 
 // Initial leaderboard render (empty)
 // On page load, load leaderboard from localStorage and render
