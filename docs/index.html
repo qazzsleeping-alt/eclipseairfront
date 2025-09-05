@@ -4,19 +4,19 @@
   <title>Eclipse Airfront</title>
   <style>
    body {
-     font-family: 'Press Start 2P', cursive;
-      background: #1a1a1a; /* Dark background for neon contrast */
-      color: #00ffff; /* Neon cyan for text */
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      box-sizing: border-box;
-      background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-      background-size: 20px 20px; /* Pixel grid background */
+  font-family: 'Press Start 2P', cursive;
+     background: url('https://i.postimg.cc/nLz1zv3m/Whats-App-Image-2025-09-05-at-4-33-56-PM.jpg') no-repeat center center fixed,
+                 linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                 linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+     background-size: cover, 20px 20px, 20px 20px;
+     color: #00ffff; /* Neon cyan for text */
+     margin: 0;
+     padding: 20px;
+     display: flex;
+     justify-content: center;
+     align-items: flex-start;
+     min-height: 100vh;
+     box-sizing: border-box;
     }
     #gameContainer {
       text-align: center;
@@ -232,7 +232,7 @@ const enemyBulletSpeed = 4;
 
 // Background image
 const bgImage = new Image();
-bgImage.src = 'https://i.postimg.cc/K8pzZF6f/dd4ed74dce3971e182731f7252e5a778.jpg';
+bgImage.src = '';
 
 // Enemy constructor with maxHp, showHpBarTimer, zigzag, and direction properties
 function createEnemy(x, y, color, big=false, hp=3, zigzag=false) {
@@ -708,12 +708,5 @@ canvas.addEventListener('touchend', endTouch, {passive:false});
 canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </script>
-
 </body>
 </html>
-
-
-
-
-
-
