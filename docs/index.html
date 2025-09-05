@@ -314,7 +314,7 @@ function update() {
 
     // Zigzag movement if enabled
     if (enemy.zigzag) {
-      const amplitude = 4; // Adjust amplitude for zigzag width
+      const amplitude = 2; // Adjust amplitude for zigzag width
       const frequency = 0.05; // Adjust frequency for speed of oscillation
       enemy.x += amplitude * Math.sin(enemy.y * frequency + enemy.zigzagPhase);
       // Keep enemy within bounds
@@ -671,5 +671,3 @@ canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </body>
 </html>
-
-
