@@ -4,20 +4,20 @@
   <title>Eclipse Airfront</title>
   <style>
      body {
-      font-family: 'Press Start 2P', cursive;
-      background: #1a1a1a url('https://i.postimg.cc/nLz1zv3m/Whats-App-Image-2025-09-05-at-4-33-56-PM.jpg') no-repeat center center fixed;
-      background-size: cover; /* Ensure the image covers the entire body */
-      color: #00ffff; /* Neon cyan for text */
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      box-sizing: border-box;
-      background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-      background-size: 20px 20px; /* Pixel grid background */
+   body {
+  font-family: 'Press Start 2P', cursive;
+  background: #1a1a1a url('https://i.postimg.cc/nLz1zv3m/Whats-App-Image-2025-09-05-at-4-33-56-PM.jpg') no-repeat center center fixed,
+              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: cover, 20px 20px, 20px 20px;
+  color: #00ffff;
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  box-sizing: border-box;
     }
     #gameContainer {
       text-align: center;
@@ -712,6 +712,7 @@ canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </body>
 </html>
+
 
 
 
