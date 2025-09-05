@@ -282,20 +282,7 @@ function update() {
   // Timer update
   elapsedTime = (performance.now() - startTime) / 1000;
   infoText.textContent = `Time: ${elapsedTime.toFixed(2)} s`;
-
-  // Add zigzag movement for enemies in specific waves
-if (waveNumber === 3 || waveNumber === 5) {
-  // If enemy doesn't have directionX, initialize it
-  if (enemy.directionX === undefined) {
-    enemy.directionX = (Math.random() < 0.5) ? 1 : -1; // 1 for right, -1 for left
-    enemy.zigzagSpeed = 1; // Adjust this value for zigzag speed
-  }
-  enemy.x += enemy.directionX * enemy.zigzagSpeed;
-  // Reverse direction if hitting canvas boundaries
-  if (enemy.x <= 0 || enemy.x + enemy.width >= canvas.width) {
-    enemy.directionX *= -1;
-  }
-
+  
   // Player move
   if(player.movingLeft) player.x -= player.speed;
   if(player.movingRight) player.x += player.speed;
@@ -660,4 +647,5 @@ canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </body>
 </html>
+
 
