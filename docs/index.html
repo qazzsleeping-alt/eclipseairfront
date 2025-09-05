@@ -18,12 +18,14 @@
       text-align: center;
       margin: 10px;
       position: relative;
+      touch-action: none; /* prevent default touch actions for smooth control */
     }
     canvas {
       display: block;
       margin: 0 auto;
       border: 2px solid #ccc;
       background: black;
+      touch-action: none;
     }
     #waveText {
       margin-top: 10px;
@@ -85,12 +87,12 @@
       border: 1px solid #888;
     }
     #restartBtn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: none; /* pastikan display diurus oleh JS */
-  z-index: 10;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none; /* pastikan display diurus oleh JS */
+      z-index: 10;
     }
   </style>
 </head>
@@ -205,18 +207,16 @@ function spawnWave(num) {
       break;
     case 2:
       // Formasi V:
-      // Posisi x: kiri dan kanan secara simetri, y bertambah ke bawah
       const centerX = canvas.width / 2;
       const startY = -60;
       const gapX = 50;
       const gapY = 50;
 
-      // kiri kanan berpasangan
       for(let i = 0; i < 4; i++) {
         let y = startY + i * gapY;
-        enemies.push(createEnemy(centerX - gapX * i, y, '#FF3333')); // kiri
-        if(i !== 0) { // supaya titik tengah atas hanya satu musuh
-          enemies.push(createEnemy(centerX + gapX * i, y, '#FF3333')); // kanan
+        enemies.push(createEnemy(centerX - gapX * i, y, '#FF3333'));
+        if(i !== 0) {
+          enemies.push(createEnemy(centerX + gapX * i, y, '#FF3333'));
         }
       }
       break;
@@ -437,9 +437,24 @@ function gameLoop() {
 // Add winner to leaderboard and update display
 function addToLeaderboard(name, time) {
   if(!name) return;
-  leaderboard.push({name, time});
-  // Sort ascending by time (fastest first)
+  // Check if player already exists
+  const existingIndex = leaderboard.findIndex(entry => entry.name === name);
+  if(existingIndex !== -1){
+    // Update time if new time is better (smaller)
+    if(time < leaderboard[existingIndex].time){
+      leaderboard[existingIndex].time = time;
+    }
+  } else {
+    // Add new player
+    leaderboard.push({name, time});
+  }
+  // Sort by time ascending
   leaderboard.sort((a,b) => a.time - b.time);
+
+  // Save to localStorage
+  saveLeaderboardToStorage();
+
+  // Render updated leaderboard
   renderLeaderboard();
 }
 
@@ -460,30 +475,6 @@ function loadLeaderboardFromStorage() {
 // Save leaderboard array to localStorage
 function saveLeaderboardToStorage() {
   localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-}
-
-// Add or update player score in leaderboard
-function addToLeaderboard(name, time) {
-  if(!name) return;
-  // Check if player already exists
-  const existingIndex = leaderboard.findIndex(entry => entry.name === name);
-  if(existingIndex !== -1){
-    // Update time if new time is better (smaller)
-    if(time < leaderboard[existingIndex].time){
-      leaderboard[existingIndex].time = time;
-    }
-  } else {
-    // Add new player
-    leaderboard.push({name, time});
-  }
-  // Sort by time ascending
-  leaderboard.sort((a,b) => a.time - b.time);
-
-  // Save to localStorage
-  saveLeaderboardToStorage();
-
-  // Render updated leaderboard
-  renderLeaderboard();
 }
 
 // Render leaderboard in the list element
@@ -576,6 +567,101 @@ function resetGame() {
 // On page load, load leaderboard from localStorage and render
 loadLeaderboardFromStorage();
 renderLeaderboard();
+
+/* === Mobile Touch Control Integration === */
+
+// Variables for mobile touch control
+let autoFireInterval = null;
+let isDraggingPlayer = false;
+let dragTouchId = null;
+let touchOffsetX = 0;
+let touchOffsetY = 0;
+
+const gameContainer = document.getElementById('gameContainer');
+
+// Start auto firing bullets function
+function startAutoFire() {
+  if (autoFireInterval) return; // Already firing
+  autoFireInterval = setInterval(() => {
+    firePlayerBullet();
+  }, 250); // fire every 250ms
+}
+
+// Stop auto firing bullets function
+function stopAutoFire() {
+  if (autoFireInterval) {
+    clearInterval(autoFireInterval);
+    autoFireInterval = null;
+  }
+}
+
+// Get touch position relative to canvas
+function getTouchPos(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
+}
+
+// Check if touch is on player pyramid
+function isTouchOnPlayer(x, y) {
+  return x >= player.x && x <= player.x + player.width
+      && y >= player.y && y <= player.y + player.height;
+}
+
+// Touch start event on game container
+gameContainer.addEventListener('touchstart', (e) => {
+  if(gameOver || gameWin) return;
+  e.preventDefault();
+  for(let touch of e.changedTouches){
+    const pos = getTouchPos(touch);
+    if(isTouchOnPlayer(pos.x, pos.y)){
+      // Start dragging player
+      isDraggingPlayer = true;
+      dragTouchId = touch.identifier;
+      touchOffsetX = pos.x - player.x;
+      touchOffsetY = pos.y - player.y;
+      stopAutoFire(); // stop firing while dragging
+    } else {
+      // Start auto fire
+      startAutoFire();
+    }
+  }
+}, {passive:false});
+
+// Touch move event on game container
+gameContainer.addEventListener('touchmove', (e) => {
+  if(gameOver || gameWin) return;
+  e.preventDefault();
+  if(!isDraggingPlayer) return;
+  for(let touch of e.changedTouches){
+    if(touch.identifier === dragTouchId){
+      const pos = getTouchPos(touch);
+      player.x = pos.x - touchOffsetX;
+      player.y = pos.y - touchOffsetY;
+      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+      player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+      break;
+    }
+  }
+}, {passive:false});
+
+// Touch end or cancel event on game container
+function endTouch(e){
+  e.preventDefault();
+  for(let touch of e.changedTouches){
+    if(touch.identifier === dragTouchId){
+      isDraggingPlayer = false;
+      dragTouchId = null;
+    }
+  }
+  stopAutoFire();
+}
+
+gameContainer.addEventListener('touchend', endTouch, {passive:false});
+gameContainer.addEventListener('touchcancel', endTouch, {passive:false});
+
 </script>
 </body>
 </html>
