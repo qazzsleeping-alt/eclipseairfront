@@ -64,7 +64,7 @@
       100% { opacity: 1; }
     }
     button {
-      margin-top: 15px;
+      margin: 10px 5px;
       font-size: 1em;
       padding: 10px 20px;
       cursor: pointer;
@@ -72,6 +72,8 @@
       color: #000;
       transition: box-shadow 0.2s;
       font-family: 'Press Start 2P', cursive;
+      border-radius: 4px;
+      border: 2px solid #00ffff;
     }
     button:hover {
       box-shadow: 0 0 15px #00ffff, 0 0 20px #ff00ff; /* Default neon glow */
@@ -174,6 +176,7 @@
 
 <div id="leaderboardContainer">
   <h2>Leaderboard</h2>
+  <button id="clearLeaderboardBtn">Clear Leaderboard</button>
   <ol id="leaderboardList">
     <!-- Leaderboard entries will appear here -->
   </ol>
@@ -188,6 +191,7 @@ const infoText = document.getElementById('infoText');
 const gameOverText = document.getElementById('gameOver');
 const gameWinText = document.getElementById('gameWin');
 const restartBtn = document.getElementById('restartBtn');
+const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
 
 const nameInputContainer = document.getElementById('nameInputContainer');
 const nameInput = document.getElementById('nameInput');
@@ -234,8 +238,8 @@ function createEnemy() {
 // Spawn enemies randomly
 function spawnEnemy() {
   let spawnChance = 0.02; // Base 2% chance
-  if (stars >= 3) spawnChance = 0.06; // 6% for 3 stars (tripled)
-  else if (stars >= 2) spawnChance = 0.04; // 4% for 2 stars (doubled)
+  if (stars === 3) spawnChance = 0.06; // 6% for 3 stars (tripled)
+  else if (stars === 2) spawnChance = 0.04; // 4% for 2 stars (doubled)
   if (Math.random() < spawnChance) {
     enemies.push(createEnemy());
   }
@@ -294,6 +298,7 @@ function updateNeonColors() {
   const nameInputElement = document.getElementById('nameInput');
   const startBtnElement = document.getElementById('startBtn');
   const restartBtnElement = document.getElementById('restartBtn');
+  const clearLeaderboardBtnElement = document.getElementById('clearLeaderboardBtn');
   const h1 = gameContainer.querySelector('h1');
   const ps = gameContainer.querySelectorAll('p');
   const leaderboardH2 = leaderboardContainer.querySelector('h2');
@@ -307,8 +312,10 @@ function updateNeonColors() {
   nameInputElement.style.borderColor = neonColor;
   startBtnElement.style.backgroundColor = neonColor;
   restartBtnElement.style.backgroundColor = neonColor;
+  clearLeaderboardBtnElement.style.backgroundColor = neonColor;
   startBtnElement.style.boxShadow = `0 0 15px ${neonColor}, 0 0 20px ${neonColor}`;
   restartBtnElement.style.boxShadow = `0 0 15px ${neonColor}, 0 0 20px ${neonColor}`;
+  clearLeaderboardBtnElement.style.boxShadow = `0 0 15px ${neonColor}, 0 0 20px ${neonColor}`;
 
   // Update text colors and shadows
   h1.style.color = neonColor;
@@ -443,49 +450,82 @@ function gameLoop() {
 
 // Add to leaderboard and update display
 function addToLeaderboard(name, score, stars) {
-  if (!name) return;
-  const existingIndex = leaderboard.findIndex(entry => entry.name === name);
+  if (!name || name.trim() === '') {
+    console.error('Cannot add to leaderboard: Player name is empty');
+    return;
+  }
+  const cleanName = name.trim().toLowerCase();
+  const existingIndex = leaderboard.findIndex(entry => entry.name.toLowerCase() === cleanName);
   if (existingIndex !== -1) {
-    if (score > leaderboard[existingIndex].score) {
+    if (score >= leaderboard[existingIndex].score) {
       leaderboard[existingIndex].score = score;
       leaderboard[existingIndex].stars = stars;
+      console.log(`Updated score for ${name}: ${score} with ${stars} stars`);
     }
   } else {
-    leaderboard.push({ name, score, stars });
+    leaderboard.push({ name: name.trim(), score, stars });
+    console.log(`Added new score for ${name}: ${score} with ${stars} stars`);
   }
   leaderboard.sort((a, b) => b.score - a.score);
-  saveLeaderboardToStorage();
-  renderLeaderboard();
+  try {
+    saveLeaderboardToStorage();
+    renderLeaderboard();
+  } catch (e) {
+    console.error('Failed to save or render leaderboard:', e);
+  }
 }
 
 // Load leaderboard from localStorage
 function loadLeaderboardFromStorage() {
-  const data = localStorage.getItem('leaderboard');
-  if (data) {
-    try {
+  try {
+    const data = localStorage.getItem('leaderboard');
+    if (data) {
       leaderboard = JSON.parse(data);
-    } catch (e) {
+      if (!Array.isArray(leaderboard)) {
+        console.error('Invalid leaderboard data, resetting to empty array');
+        leaderboard = [];
+      }
+    } else {
       leaderboard = [];
     }
-  } else {
+    renderLeaderboard();
+  } catch (e) {
+    console.error('Failed to load leaderboard from localStorage:', e);
     leaderboard = [];
+    renderLeaderboard();
   }
 }
 
 // Save leaderboard to localStorage
 function saveLeaderboardToStorage() {
-  localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+  try {
+    localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+  } catch (e) {
+    console.error('Failed to save leaderboard to localStorage:', e);
+  }
 }
 
 // Render leaderboard
 function renderLeaderboard() {
   leaderboardList.innerHTML = '';
-  leaderboard.forEach((entry) => {
-    const li = document.createElement('li');
-    li.textContent = `${entry.name} - ${entry.score} (${entry.stars || 0}★)`;
-    leaderboardList.appendChild(li);
+  leaderboard.forEach((entry, index) => {
+    if (entry.name && entry.score >= 0) {
+      const li = document.createElement('li');
+      li.textContent = `${entry.name} - ${entry.score} (${entry.stars || 0}★)`;
+      leaderboardList.appendChild(li);
+    }
   });
 }
+
+// Clear leaderboard
+clearLeaderboardBtn.addEventListener('click', () => {
+  if (confirm('Are you sure you want to clear the leaderboard? This cannot be undone.')) {
+    localStorage.removeItem('leaderboard');
+    leaderboard = [];
+    renderLeaderboard();
+    console.log('Leaderboard cleared');
+  }
+});
 
 // Restart game
 restartBtn.addEventListener('click', () => {
@@ -556,10 +596,8 @@ function resetGame() {
 
 // Initial leaderboard render
 loadLeaderboardFromStorage();
-renderLeaderboard();
 
-/* === Mobile Touch Control on Canvas === */
-
+// Mobile Touch Control on Canvas
 let autoFireInterval = null;
 let isDraggingPlayer = false;
 let dragTouchId = null;
@@ -635,7 +673,6 @@ function endTouch(e) {
 
 canvas.addEventListener('touchend', endTouch, { passive: false });
 canvas.addEventListener('touchcancel', endTouch, { passive: false });
-
 </script>
 </body>
 </html>
