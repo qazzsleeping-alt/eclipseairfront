@@ -18,14 +18,13 @@
       text-align: center;
       margin: 10px;
       position: relative;
-      /* Removed touch-action:none here to avoid blocking inputs */
     }
     canvas {
       display: block;
       margin: 0 auto;
       border: 2px solid #ccc;
       background: black;
-      touch-action: none; /* prevent default gestures only on canvas */
+      touch-action: none;
     }
     #waveText {
       margin-top: 10px;
@@ -42,8 +41,9 @@
       top: 40%;
       left: 50%;
       transform: translate(-50%, -50%);
-      display: none; /* pastikan display diurus oleh JS */
+      display: none;
       z-index: 10;
+      -webkit-text-stroke: 4px black; /* Stroke for Game Over and Game Win text */
     }
     #gameOver {
       color: red;
@@ -91,7 +91,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      display: none; /* pastikan display diurus oleh JS */
+      display: none;
       z-index: 10;
     }
   </style>
@@ -190,8 +190,8 @@ function createEnemy(x, y, color, big=false, hp=3, zigzag=false) {
     shootTimer: 0,
     shootInterval: big ? 120 : 200 + Math.floor(Math.random()*200),
     showHpBarTimer: 0,
-    zigzag, // Flag for zigzag movement
-    zigzagPhase: Math.random() * Math.PI * 2 // Random starting phase for variety
+    zigzag,
+    zigzagPhase: Math.random() * Math.PI * 2
   };
 }
 
@@ -212,7 +212,6 @@ function spawnWave(num) {
       }
       break;
     case 2:
-      // Formasi V:
       const centerX = canvas.width / 2;
       const startY = -60;
       const gapX = 50;
@@ -230,7 +229,7 @@ function spawnWave(num) {
       for(let i=0; i<5; i++) {
         let x = canvas.width/2 - 60 + i*60;
         let y = -100 - i*60;
-        enemies.push(createEnemy(x, y, '#FF3333', true, 3, true)); // Big enemies with zigzag
+        enemies.push(createEnemy(x, y, '#FF3333', true, 3, true));
       }
       break;
     case 4:
@@ -241,11 +240,11 @@ function spawnWave(num) {
       }
       break;
     case 5:
-      enemies.push(createEnemy(canvas.width/2 - 40, -120, '#AA0000', true, 50, true)); // Boss with zigzag
-      enemies.push(createEnemy(canvas.width/2 - 120, -60, '#FF3333', false, 3, true)); // With zigzag
-      enemies.push(createEnemy(canvas.width/2 + 40, -60, '#FF3333', false, 3, true)); // With zigzag
-      enemies.push(createEnemy(canvas.width/2 - 160, -30, '#FF3333', false, 3, true)); // With zigzag
-      enemies.push(createEnemy(canvas.width/2 + 80, -30, '#FF3333', false, 3, true)); // With zigzag
+      enemies.push(createEnemy(canvas.width/2 - 40, -120, '#AA0000', true, 50, true));
+      enemies.push(createEnemy(canvas.width/2 - 120, -60, '#FF3333', false, 3, true));
+      enemies.push(createEnemy(canvas.width/2 + 40, -60, '#FF3333', false, 3, true));
+      enemies.push(createEnemy(canvas.width/2 - 160, -30, '#FF3333', false, 3, true));
+      enemies.push(createEnemy(canvas.width/2 + 80, -30, '#FF3333', false, 3, true));
       break;
   }
 }
@@ -285,11 +284,9 @@ function isColliding(a, b){
 function update() {
   if(gameOver || gameWin) return;
 
-  // Timer update
   elapsedTime = (performance.now() - startTime) / 1000;
   infoText.textContent = `Time: ${elapsedTime.toFixed(2)} s`;
   
-  // Player move
   if(player.movingLeft) player.x -= player.speed;
   if(player.movingRight) player.x += player.speed;
   if(player.movingUp) player.y -= player.speed;
@@ -298,26 +295,21 @@ function update() {
   player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
   player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
 
-  // Update player's bullets
   bullets.forEach(b => b.y -= b.speed);
   bullets = bullets.filter(b => b.y + b.height > 0);
 
-  // Update enemies' bullets
   enemyBullets.forEach(b => b.y += b.speed);
   enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
 
-  // Update enemies movement and shooting
   enemies.forEach(enemy => {
     if(!enemy.alive) return;
 
     enemy.y += enemySpeed;
 
-    // Zigzag movement if enabled
     if (enemy.zigzag) {
-      const amplitude = 2; // Adjust amplitude for zigzag width
-      const frequency = 0.05; // Adjust frequency for speed of oscillation
+      const amplitude = 2;
+      const frequency = 0.05;
       enemy.x += amplitude * Math.sin(enemy.y * frequency + enemy.zigzagPhase);
-      // Keep enemy within bounds
       enemy.x = Math.max(0, Math.min(canvas.width - enemy.width, enemy.x));
     }
 
@@ -332,7 +324,6 @@ function update() {
     }
   });
 
-  // Bullet hits enemy
   bullets.forEach(bullet => {
     enemies.forEach(enemy => {
       if(enemy.alive && isColliding(bullet, enemy)){
@@ -346,14 +337,12 @@ function update() {
     });
   });
 
-  // Decrease HP bar timer for enemies
   enemies.forEach(enemy => {
     if(enemy.showHpBarTimer > 0){
       enemy.showHpBarTimer--;
     }
   });
 
-  // Enemy bullet hits player
   enemyBullets.forEach(bullet => {
     if(isColliding(bullet, player)){
       gameOver = true;
@@ -362,7 +351,6 @@ function update() {
     }
   });
 
-  // Player collides enemy → game over immediately
   for(let enemy of enemies){
     if(enemy.alive && isColliding(enemy, player)){
       gameOver = true;
@@ -372,7 +360,6 @@ function update() {
     }
   }
 
-  // Check if all enemies dead → next wave (if not last wave)
   if(enemies.every(e => !e.alive)){
     if(waveNumber === maxWave){
       gameWin = true;
@@ -391,28 +378,28 @@ function update() {
 function draw() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // Draw background image if loaded
   if (bgImage.complete) {
     ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
   } else {
-    // Fallback to black if image not loaded
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // Player triangle
+  // Player triangle with 2px stroke
   ctx.fillStyle = '#00BFFF';
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(player.x + player.width / 2, player.y); // Top center
-  ctx.lineTo(player.x, player.y + player.height);    // Bottom left
-  ctx.lineTo(player.x + player.width, player.y + player.height); // Bottom right
+  ctx.moveTo(player.x + player.width / 2, player.y);
+  ctx.lineTo(player.x, player.y + player.height);
+  ctx.lineTo(player.x + player.width, player.y + player.height);
   ctx.closePath();
   ctx.fill();
-  // Player bullets
+  ctx.stroke();
+
   ctx.fillStyle = '#FFFF00';
   bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-  // Enemies
   enemies.forEach(enemy => {
     if(enemy.alive){
       ctx.fillStyle = enemy.color;
@@ -424,7 +411,6 @@ function draw() {
         ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
       }
 
-      // Draw HP bar if showHpBarTimer active
       if(enemy.showHpBarTimer > 0){
         const barWidth = enemy.width;
         const barHeight = 6;
@@ -444,7 +430,6 @@ function draw() {
     }
   });
 
-  // Enemy bullets
   ctx.fillStyle = '#FF4500';
   enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 }
@@ -586,7 +571,6 @@ let dragTouchId = null;
 let touchOffsetX = 0;
 let touchOffsetY = 0;
 
-// Start auto fire bullets function
 function startAutoFire() {
   if (autoFireInterval) return;
   autoFireInterval = setInterval(() => {
@@ -594,7 +578,6 @@ function startAutoFire() {
   }, 250);
 }
 
-// Stop auto fire bullets function
 function stopAutoFire() {
   if (autoFireInterval) {
     clearInterval(autoFireInterval);
@@ -602,7 +585,6 @@ function stopAutoFire() {
   }
 }
 
-// Get touch position relative to canvas
 function getTouchPos(touch) {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -611,13 +593,11 @@ function getTouchPos(touch) {
   };
 }
 
-// Check if touch is on player pyramid
 function isTouchOnPlayer(x, y) {
   return x >= player.x && x <= player.x + player.width
       && y >= player.y && y <= player.y + player.height;
 }
 
-// Touch start on canvas
 canvas.addEventListener('touchstart', (e) => {
   if(gameOver || gameWin) return;
   e.preventDefault();
@@ -635,7 +615,6 @@ canvas.addEventListener('touchstart', (e) => {
   }
 }, {passive:false});
 
-// Touch move on canvas
 canvas.addEventListener('touchmove', (e) => {
   if(gameOver || gameWin) return;
   e.preventDefault();
@@ -652,7 +631,6 @@ canvas.addEventListener('touchmove', (e) => {
   }
 }, {passive:false});
 
-// Touch end and cancel on canvas
 function endTouch(e){
   e.preventDefault();
   for(let touch of e.changedTouches){
@@ -671,4 +649,3 @@ canvas.addEventListener('touchcancel', endTouch, {passive:false});
 
 </body>
 </html>
-
